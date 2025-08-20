@@ -1,4 +1,6 @@
 
+
+
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -282,6 +284,7 @@ th { background-color: #11202c; color:#cfe4ff }
 }
 </style>
 </head>
+
 <body>
 
 <div class="header">
@@ -1733,6 +1736,138 @@ function toggleTables() {
   generateMessage();
 })();
 </script>
+class RightClickTextSelector {
+  constructor() {
+      this.isRightClickSelecting = false;
+      this.rightClickTarget = null;
+      this.init();
+  }
 
+  init() {
+      if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', () => this.setupEventListeners());
+      } else {
+          this.setupEventListeners();
+      }
+  }
+
+  setupEventListeners() {
+      setTimeout(() => {
+          const cells = document.querySelectorAll('.cell');
+          
+          cells.forEach(cell => {
+              cell.addEventListener('mousedown', (e) => this.handleMouseDown(e, cell));
+              cell.addEventListener('mouseup', (e) => this.handleMouseUp(e, cell));
+          });
+
+          document.addEventListener('contextmenu', (e) => this.handleContextMenu(e));
+          document.addEventListener('mousedown', (e) => this.handleGlobalMouseDown(e));
+      }, 500);
+  }
+
+  handleMouseDown(e, cell) {
+      if (e.button === 2) {
+          e.preventDefault();
+          this.isRightClickSelecting = true;
+          this.rightClickTarget = cell;
+          
+          cell.classList.add('right-click-selecting');
+          cell.classList.add('right-click-highlight');
+          
+          const selection = window.getSelection();
+          const range = document.createRange();
+          range.selectNodeContents(cell);
+          selection.removeAllRanges();
+          selection.addRange(range);
+          
+          return false;
+      }
+  }
+
+  handleMouseUp(e, cell) {
+      if (e.button === 2 && this.isRightClickSelecting) {
+          e.preventDefault();
+          this.isRightClickSelecting = false;
+          
+          this.copySelectedText();
+          
+          setTimeout(() => {
+              if (this.rightClickTarget) {
+                  this.rightClickTarget.classList.remove('right-click-selecting');
+                  this.rightClickTarget.classList.remove('right-click-highlight');
+                  window.getSelection().removeAllRanges();
+                  this.rightClickTarget = null;
+              }
+          }, 100);
+          
+          return false;
+      }
+  }
+
+  handleContextMenu(e) {
+      if (this.isRightClickSelecting) {
+          e.preventDefault();
+          return false;
+      }
+  }
+
+  handleGlobalMouseDown(e) {
+      if (e.button === 0 && this.rightClickTarget) {
+          this.rightClickTarget.classList.remove('right-click-selecting');
+          this.rightClickTarget.classList.remove('right-click-highlight');
+          window.getSelection().removeAllRanges();
+          this.rightClickTarget = null;
+          this.isRightClickSelecting = false;
+      }
+  }
+
+  copySelectedText() {
+      const selection = window.getSelection();
+      const selectedText = selection.toString().trim();
+      
+      if (selectedText.length > 0) {
+          navigator.clipboard.writeText(selectedText).catch(err => {
+              console.error('Failed to copy text: ', err);
+              const textArea = document.createElement('textarea');
+              textArea.value = selectedText;
+              document.body.appendChild(textArea);
+              textArea.select();
+              document.execCommand('copy');
+              document.body.removeChild(textArea);
+          });
+      }
+  }
+}
+
+// تهيئة الخاصية عند تحميل الصفحة
+new RightClickTextSelector();
+.cell, .cell * {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+.right-click-selecting {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  cursor: text;
+}
+
+.right-click-selecting::selection {
+  background: rgba(231, 76, 60, 0.5);
+  color: #fff;
+}
+
+.right-click-selecting::-moz-selection {
+  background: rgba(231, 76, 60, 0.5);
+  color: #fff;
+}
+
+.right-click-highlight {
+  background-color: rgba(231, 76, 60, 0.3) !important;
+}
 </body>
 </html>
